@@ -1,362 +1,355 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Loading Screen
-    const loadingScreen = document.getElementById('loading-screen');
-    setTimeout(() => {
-        loadingScreen.classList.add('hidden');
-    }, 1500);
 
-    // 2. Scroll Progress Bar
-    const scrollProgress = document.getElementById('scroll-progress');
-    window.addEventListener('scroll', () => {
-        const totalHeight = document.body.scrollHeight - window.innerHeight;
-        const progress = (window.scrollY / totalHeight) * 100;
-        scrollProgress.style.width = `${progress}%`;
+    // --- 1. Loading Screen ---
+    const loadingScreen = document.getElementById('loading-screen');
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
+        }, 500); // Small delay to ensure smooth transition
     });
 
-    // 3. Sticky Navbar & Active Links
-    const header = document.getElementById('header');
+    // --- 2. Scroll Progress Indicator ---
+    const scrollProgress = document.querySelector('.scroll-progress');
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollPercent = (scrollTop / docHeight) * 100;
+        scrollProgress.style.width = scrollPercent + '%';
+    });
+
+    // --- 3. Sticky Navigation & Active Links ---
+    const navbar = document.getElementById('navbar');
     const navLinks = document.querySelectorAll('.nav-links a');
     const sections = document.querySelectorAll('section');
-    const backToTop = document.getElementById('backToTop');
 
     window.addEventListener('scroll', () => {
-        // Navbar styling
+        // Sticky Nav
         if (window.scrollY > 50) {
-            header.classList.add('scrolled');
+            navbar.classList.add('scrolled');
         } else {
-            header.classList.remove('scrolled');
+            navbar.classList.remove('scrolled');
         }
 
-        // Back to top button
-        if (window.scrollY > 500) {
-            backToTop.classList.add('show');
-        } else {
-            backToTop.classList.remove('show');
-        }
-
-        // Active link highlighting
+        // Active Link Highlighting
         let current = '';
         sections.forEach(section => {
             const sectionTop = section.offsetTop;
             const sectionHeight = section.clientHeight;
-            if (window.scrollY >= (sectionTop - sectionHeight / 3)) {
+            if (pageYOffset >= sectionTop - 150) {
                 current = section.getAttribute('id');
             }
         });
 
         navLinks.forEach(link => {
             link.classList.remove('active');
-            if (link.getAttribute('href').includes(current) && current !== '') {
+            if (link.getAttribute('href') === `#${current}`) {
                 link.classList.add('active');
             }
         });
     });
 
-    // 4. Mobile Menu Toggle
-    const mobileBtn = document.querySelector('.mobile-menu-btn');
-    const navMenu = document.querySelector('.nav-links');
+    // Mobile Menu Toggle
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navLinksContainer = document.querySelector('.nav-links');
 
-    mobileBtn.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
+    menuToggle.addEventListener('click', () => {
+        navLinksContainer.classList.toggle('active');
     });
 
-    // Close mobile menu when link clicked
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
-            navMenu.classList.remove('active');
+            navLinksContainer.classList.remove('active');
         });
     });
 
-    // Back to Top functionality
-    backToTop.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    // --- 4. Scroll Reveal Animations ---
+    const revealElements = document.querySelectorAll('.reveal, .reveal-up, .reveal-left, .reveal-right');
 
-    // 5. Scroll Reveal Animations
-    const reveals = document.querySelectorAll('.reveal');
-
-    const revealOnScroll = () => {
-        const windowHeight = window.innerHeight;
-        const elementVisible = 100;
-
-        reveals.forEach(reveal => {
-            const elementTop = reveal.getBoundingClientRect().top;
-            if (elementTop < windowHeight - elementVisible) {
-                reveal.classList.add('active');
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+                observer.unobserve(entry.target); // Only animate once
             }
         });
-    };
+    }, {
+        threshold: 0.15,
+        rootMargin: "0px 0px -50px 0px"
+    });
 
-    window.addEventListener('scroll', revealOnScroll);
-    revealOnScroll(); // Trigger once on load
+    revealElements.forEach(el => revealObserver.observe(el));
 
-    // 6. Animated Counters
+    // --- 5. Animated Counters ---
     const counters = document.querySelectorAll('.counter');
-    let hasAnimated = false;
+    let countersAnimated = false;
 
     const animateCounters = () => {
         counters.forEach(counter => {
             const target = +counter.getAttribute('data-target');
             const duration = 2000; // ms
-            const stepTime = Math.abs(Math.floor(duration / target));
+            const increment = target / (duration / 16); // 60fps
             let current = 0;
 
-            const timer = setInterval(() => {
-                current += Math.ceil(target / 50); // Increment
-                if (current >= target) {
-                    counter.innerText = target;
-                    clearInterval(timer);
+            const updateCounter = () => {
+                current += increment;
+                if (current < target) {
+                    counter.innerText = Math.ceil(current).toLocaleString();
+                    requestAnimationFrame(updateCounter);
                 } else {
-                    counter.innerText = current;
+                    counter.innerText = target.toLocaleString();
                 }
-            }, 30); // 30ms between updates for smoothness
+            };
+            updateCounter();
         });
     };
 
-    const counterSection = document.querySelector('.trust-section');
-    window.addEventListener('scroll', () => {
-        if (!hasAnimated && counterSection) {
-            const sectionTop = counterSection.getBoundingClientRect().top;
-            if (sectionTop < window.innerHeight - 100) {
+    // Use IntersectionObserver to start counters when visible
+    const statsSection = document.querySelector('.trust-section');
+    if(statsSection) {
+        const statsObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !countersAnimated) {
                 animateCounters();
-                hasAnimated = true;
+                countersAnimated = true;
             }
-        }
-    });
-
-    // 7. Customer Reviews Slider
-    const reviews = [
-        {
-            name: "Sarah Johnson",
-            img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop",
-            rating: "★★★★★",
-            text: "Incredible service! Bought my iPhone 15 here and the staff was extremely helpful. Highly recommend for premium gadgets."
-        },
-        {
-            name: "Michael Chen",
-            img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop",
-            rating: "★★★★★",
-            text: "Best mobile shop in the city. They offered a great exchange value for my old phone and set up everything perfectly."
-        },
-        {
-            name: "Emma Williams",
-            img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop",
-            rating: "★★★★☆",
-            text: "Great collection of accessories. Found the exact smartwatch strap I was looking for. Will visit again!"
-        },
-        {
-            name: "David Smith",
-            img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150&auto=format&fit=crop",
-            rating: "★★★★★",
-            text: "Exceptional after-sales support. Had a minor issue with my device and they resolved it within minutes."
-        },
-        {
-            name: "Jessica Taylor",
-            img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop",
-            rating: "★★★★★",
-            text: "The delivery was surprisingly fast! Ordered online and received it the very next day securely packaged."
-        },
-        {
-            name: "Robert Brown",
-            img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=150&auto=format&fit=crop",
-            rating: "★★★★☆",
-            text: "Very knowledgeable staff. They helped me choose the right phone based on my budget and needs."
-        }
-    ];
-
-    const sliderContainer = document.getElementById('reviewSlider');
-    const dotsContainer = document.getElementById('sliderDots');
-    let currentSlide = 0;
-
-    if (sliderContainer && dotsContainer) {
-        // Generate Reviews
-        reviews.forEach((review, index) => {
-            const slide = document.createElement('div');
-            slide.classList.add('review-card');
-            slide.innerHTML = `
-                <img src="${review.img}" alt="${review.name}" class="reviewer-img">
-                <div class="rating">${review.rating}</div>
-                <p class="review-text">"${review.text}"</p>
-                <h4 class="reviewer-name">${review.name}</h4>
-            `;
-            sliderContainer.appendChild(slide);
-
-            const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if (index === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => goToSlide(index));
-            dotsContainer.appendChild(dot);
-        });
-
-        const updateSlider = () => {
-            sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
-            document.querySelectorAll('.dot').forEach((dot, index) => {
-                dot.classList.toggle('active', index === currentSlide);
-            });
-        };
-
-        const goToSlide = (index) => {
-            currentSlide = index;
-            updateSlider();
-        };
-
-        document.querySelector('.prev-btn')?.addEventListener('click', () => {
-            currentSlide = (currentSlide > 0) ? currentSlide - 1 : reviews.length - 1;
-            updateSlider();
-        });
-
-        document.querySelector('.next-btn')?.addEventListener('click', () => {
-            currentSlide = (currentSlide < reviews.length - 1) ? currentSlide + 1 : 0;
-            updateSlider();
-        });
-
-        // Auto slide
-        setInterval(() => {
-            currentSlide = (currentSlide < reviews.length - 1) ? currentSlide + 1 : 0;
-            updateSlider();
-        }, 5000);
+        }, { threshold: 0.5 });
+        statsObserver.observe(statsSection);
     }
 
-    // 8. FAQ Accordion
-    const accordions = document.querySelectorAll('.accordion-btn');
-    accordions.forEach(acc => {
-        acc.addEventListener('click', function() {
-            this.classList.toggle('active');
-            const content = this.nextElementSibling;
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null;
-            } else {
-                content.style.maxHeight = content.scrollHeight + "px";
+    // Also observe the second stats section
+    const statsSection2 = document.querySelector('.stats-section');
+    if(statsSection2) {
+        const statsObserver2 = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                // Re-select counters in this specific section to avoid double animating first ones if they already ran,
+                // but for simplicity we can just rely on the first observer or a class flag per counter.
+                // A better approach is attaching observer to individual counters.
+                entries[0].target.querySelectorAll('.counter').forEach(counter => {
+                    if(!counter.classList.contains('animated')) {
+                         const target = +counter.getAttribute('data-target');
+                         const duration = 2000;
+                         const increment = target / (duration / 16);
+                         let current = 0;
+                         const update = () => {
+                             current += increment;
+                             if(current < target) {
+                                 counter.innerText = Math.ceil(current).toLocaleString();
+                                 requestAnimationFrame(update);
+                             } else {
+                                 counter.innerText = target.toLocaleString();
+                                 counter.classList.add('animated');
+                             }
+                         };
+                         update();
+                    }
+                });
             }
-        });
-    });
-
-    // 9. Form Submissions
-    const inquiryForm = document.getElementById('inquiryForm');
-    const formSuccess = document.getElementById('formSuccess');
-
-    if (inquiryForm) {
-        inquiryForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            inquiryForm.style.display = 'none';
-            formSuccess.classList.remove('hidden');
-
-            // Mock API call reset
-            setTimeout(() => {
-                inquiryForm.reset();
-                inquiryForm.style.display = 'block';
-                formSuccess.classList.add('hidden');
-            }, 5000);
-        });
+        }, { threshold: 0.3 });
+        statsObserver2.observe(statsSection2);
     }
 
-    const newsletterForm = document.getElementById('newsletterForm');
-    if (newsletterForm) {
-        newsletterForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const btn = newsletterForm.querySelector('button');
-            const originalText = btn.innerText;
-            btn.innerText = 'Subscribed!';
-            btn.style.backgroundColor = '#28a745';
-            btn.style.borderColor = '#28a745';
-
-            setTimeout(() => {
-                newsletterForm.reset();
-                btn.innerText = originalText;
-                btn.style.backgroundColor = '';
-                btn.style.borderColor = '';
-            }, 3000);
-        });
-    }
-
-    // 10. Product Search and Filter
-    const searchInput = document.getElementById('productSearch');
-    const filterBtns = document.querySelectorAll('.filter-btn');
-    const productCards = document.querySelectorAll('.product-card[data-brand]');
-
-    const filterProducts = () => {
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-        const activeFilterBtn = document.querySelector('.filter-btn.active');
-        const activeFilter = activeFilterBtn ? activeFilterBtn.getAttribute('data-filter') : 'all';
-
-        productCards.forEach(card => {
-            const brand = card.getAttribute('data-brand');
-            const name = card.querySelector('.product-name').innerText.toLowerCase();
-            const brandText = card.querySelector('.product-brand').innerText.toLowerCase();
-
-            const matchesSearch = name.includes(searchTerm) || brandText.includes(searchTerm);
-            const matchesFilter = activeFilter === 'all' || brand === activeFilter;
-
-            if (matchesSearch && matchesFilter) {
-                card.classList.remove('hidden');
-            } else {
-                card.classList.add('hidden');
-            }
-        });
+    // --- 6. Product Quick View Modal ---
+    const productsData = {
+        1: { title: "Velvet Cloud Sofa", price: "$2,499", desc: "Experience unparalleled comfort with our Velvet Cloud Sofa. Upholstered in premium, stain-resistant velvet and built on a solid oak frame, this piece brings both elegance and durability to your living room.", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800", features: ["Premium Velvet Upholstery", "Solid Oak Frame", "High-density Foam Cushioning", "Available in 4 Colors"] },
+        2: { title: "Majestic King Bed", price: "$3,199", desc: "Transform your bedroom into a sanctuary with the Majestic King Bed. Featuring a hand-tufted headboard and exceptional ergonomic support for a perfect night's sleep.", img: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&q=80&w=800", features: ["Hand-tufted Headboard", "Ergonomic Slats", "Premium Linen Fabric", "Easy Assembly"] },
+        3: { title: "Marble Heritage Table", price: "$1,899", desc: "Dine in luxury with the Marble Heritage Table. Crafted from a single piece of authentic Italian marble, resting on a sleek brass-finished base.", img: "https://images.unsplash.com/photo-1604578762246-41134e37f9cc?auto=format&fit=crop&q=80&w=800", features: ["Authentic Italian Marble", "Brass-finished Base", "Seats up to 8", "Stain-resistant Sealant"] },
+        4: { title: "Executive Leather Chair", price: "$899", desc: "Command your workspace. Upholstered in genuine top-grain leather with ergonomic lumbar support and multi-tilt mechanisms.", img: "https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=800", features: ["Top-grain Leather", "Adjustable Lumbar Support", "Aluminum Base", "Smooth-rolling Casters"] },
+        5: { title: "Glass Horizon Table", price: "$499", desc: "A minimalist masterpiece. The Glass Horizon Table features a tempered glass top that creates an illusion of space, supported by a geometric metal frame.", img: "https://images.unsplash.com/photo-1532372576444-dda954194ad0?auto=format&fit=crop&q=80&w=800", features: ["Tempered Safety Glass", "Matte Black Frame", "Minimalist Design", "Easy to Clean"] },
+        6: { title: "Grand Oak Wardrobe", price: "$2,100", desc: "Store your garments in style. The Grand Oak Wardrobe offers spacious interiors, soft-close doors, and built-in LED lighting.", img: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&q=80&w=800", features: ["Solid Oak Construction", "Soft-close Hinges", "Built-in LED Lighting", "Adjustable Shelving"] },
+        7: { title: "Modern Minimalist Console", price: "$799", desc: "Elevate your entertainment area. This TV unit features elegant walnut finishes and smart cable management solutions.", img: "https://images.unsplash.com/photo-1601366533287-5ee4c763ae4e?auto=format&fit=crop&q=80&w=800", features: ["Walnut Veneer", "Smart Cable Management", "Hidden Storage", "Accommodates up to 75\" TVs"] },
+        8: { title: "Geometric Library Shelf", price: "$649", desc: "Display your books and decor on this striking asymmetrical bookshelf. Built with a sturdy metal frame and rich wooden shelves.", img: "https://images.unsplash.com/photo-1594620302200-9a762244a156?auto=format&fit=crop&q=80&w=800", features: ["Sturdy Metal Frame", "Asymmetrical Layout", "Scratch-resistant Shelves", "Wall-mounting Hardware Included"] }
     };
 
-    if (searchInput) {
-        searchInput.addEventListener('input', filterProducts);
-    }
-
-    if (filterBtns) {
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                filterProducts();
-            });
-        });
-    }
-
-    // 11. Quick View Modal
-    const modal = document.getElementById('quickViewModal');
-    const modalBody = document.getElementById('modalBody');
+    const modal = document.getElementById('quick-view-modal');
     const closeBtn = document.querySelector('.close-modal');
     const quickViewBtns = document.querySelectorAll('.quick-view-btn');
 
-    // Mock product data
-    const productData = {
-        1: { name: "iPhone 15 Pro", price: "$999", img: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?q=80&w=400", desc: "Forged in titanium and featuring the groundbreaking A17 Pro chip, a customizable Action button, and a more versatile Pro camera system." },
-        2: { name: "Samsung Galaxy S24 Ultra", price: "$1299", img: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?q=80&w=400", desc: "Welcome to the era of mobile AI. With Galaxy S24 Ultra in your hands, you can unleash whole new levels of creativity, productivity and possibility." },
-        3: { name: "Google Pixel 8 Pro", price: "$899", img: "https://images.unsplash.com/photo-1598327105666-5b89351cb31b?q=80&w=400", desc: "Meet Pixel 8 Pro, the all-pro phone engineered by Google. It's sleek, fast, and secure with the new Google Tensor G3 chip." },
-        4: { name: "OnePlus 12", price: "$799", img: "https://images.unsplash.com/photo-1533228876829-65c94e7b5025?q=80&w=400", desc: "Experience the pinnacle of performance with the Snapdragon 8 Gen 3 and the 4th Gen Hasselblad Camera for Mobile." },
-        5: { name: "Xiaomi 14 Pro", price: "$899", img: "https://images.unsplash.com/photo-1598327105666-5b89351cb31b?q=80&w=400", desc: "Capture the moment with Leica Summilux optical lenses and the power of Snapdragon 8 Gen 3." },
-        6: { name: "Vivo X100 Pro", price: "$949", img: "https://images.unsplash.com/photo-1533228876829-65c94e7b5025?q=80&w=400", desc: "Redefine photography with the Zeiss APO floating telephoto camera and Dimensity 9300 flagship chip." },
-        7: { name: "Oppo Find X7 Ultra", price: "$999", img: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?q=80&w=400", desc: "Dual periscope telephoto cameras co-engineered with Hasselblad for unmatched portrait photography." },
-        8: { name: "Realme GT 5 Pro", price: "$699", img: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?q=80&w=400", desc: "Unleash extreme performance with the Snapdragon 8 Gen 3 and ultra-fast 100W charging." }
-    };
-
     quickViewBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const id = btn.getAttribute('data-id');
-            const data = productData[id];
+            const id = e.target.getAttribute('data-product');
+            const data = productsData[id];
 
-            if (data) {
-                modalBody.innerHTML = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;">
-                        <img src="${data.img}" alt="${data.name}" style="border-radius: 10px; width: 100%;">
-                        <div>
-                            <h2 style="margin-bottom: 0.5rem; color: var(--clr-dark-blue); font-family: var(--ff-secondary);">${data.name}</h2>
-                            <h3 style="color: var(--clr-electric-blue); margin-bottom: 1rem; font-size: 1.5rem;">${data.price}</h3>
-                            <p style="margin-bottom: 1.5rem; color: var(--clr-gray-dark);">${data.desc}</p>
-                            <button class="btn btn-primary btn-block">Add to Cart</button>
-                        </div>
-                    </div>
-                `;
-                modal.classList.add('show');
+            document.getElementById('modal-img').src = data.img;
+            document.getElementById('modal-title').innerText = data.title;
+            document.getElementById('modal-price').innerText = data.price;
+            document.getElementById('modal-desc').innerText = data.desc;
+
+            const featuresList = document.getElementById('modal-features');
+            featuresList.innerHTML = '';
+            data.features.forEach(f => {
+                const li = document.createElement('li');
+                li.innerText = f;
+                featuresList.appendChild(li);
+            });
+
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        });
+    });
+
+    const closeModal = () => {
+        modal.classList.remove('show');
+        document.body.style.overflow = 'auto';
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // --- 7. Lightbox Gallery ---
+    const lightbox = document.getElementById('lightbox-modal');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const closeLightbox = document.querySelector('.close-lightbox');
+    const galleryItems = document.querySelectorAll('.gallery-item');
+
+    galleryItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const imgSrc = item.querySelector('img').src;
+            // Get higher res image for lightbox
+            const highResSrc = imgSrc.replace('&w=600', '&w=1200');
+            lightboxImg.src = highResSrc;
+            lightbox.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    const closeLightboxFunc = () => {
+        lightbox.classList.remove('show');
+        document.body.style.overflow = 'auto';
+    };
+
+    closeLightbox.addEventListener('click', closeLightboxFunc);
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightboxFunc();
+    });
+
+    // --- 8. Testimonial Slider ---
+    const track = document.querySelector('.review-track');
+    const reviews = document.querySelectorAll('.review-card');
+    const prevBtn = document.getElementById('prev-review');
+    const nextBtn = document.getElementById('next-review');
+    let currentIndex = 0;
+
+    const updateSlider = () => {
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+    };
+
+    nextBtn.addEventListener('click', () => {
+        if (currentIndex < reviews.length - 1) {
+            currentIndex++;
+        } else {
+            currentIndex = 0; // Loop back
+        }
+        updateSlider();
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentIndex > 0) {
+            currentIndex--;
+        } else {
+            currentIndex = reviews.length - 1; // Loop to end
+        }
+        updateSlider();
+    });
+
+    // Optional: Auto slide
+    setInterval(() => {
+        if(currentIndex < reviews.length - 1) {
+            currentIndex++;
+        } else {
+            currentIndex = 0;
+        }
+        updateSlider();
+    }, 5000);
+
+    // --- 9. FAQ Accordion ---
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+        const btn = item.querySelector('.faq-question');
+        const answer = item.querySelector('.faq-answer');
+
+        btn.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+
+            // Close all others
+            faqItems.forEach(otherItem => {
+                otherItem.classList.remove('active');
+                otherItem.querySelector('.faq-answer').style.maxHeight = null;
+            });
+
+            if (!isActive) {
+                item.classList.add('active');
+                answer.style.maxHeight = answer.scrollHeight + "px";
             }
         });
     });
 
-    closeBtn?.addEventListener('click', () => {
-        modal.classList.remove('show');
-    });
+    // --- 10. Forms Handling ---
+    const inquiryForm = document.getElementById('inquiry-form');
+    if (inquiryForm) {
+        inquiryForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = inquiryForm.querySelector('button[type="submit"]');
+            const successMsg = inquiryForm.querySelector('.form-success');
 
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('show');
+            btn.innerText = 'Sending...';
+            btn.disabled = true;
+
+            // Simulate API call
+            setTimeout(() => {
+                successMsg.classList.remove('hidden');
+                inquiryForm.reset();
+                btn.innerText = 'Send Inquiry';
+                btn.disabled = false;
+
+                setTimeout(() => {
+                    successMsg.classList.add('hidden');
+                }, 5000);
+            }, 1500);
+        });
+    }
+
+    const newsletterForm = document.getElementById('newsletter-form');
+    if(newsletterForm) {
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = newsletterForm.querySelector('button');
+            const successMsg = newsletterForm.nextElementSibling;
+
+            btn.innerText = '...';
+
+            setTimeout(() => {
+                successMsg.classList.remove('hidden');
+                newsletterForm.reset();
+                btn.innerText = 'Subscribe';
+
+                setTimeout(() => {
+                    successMsg.classList.add('hidden');
+                }, 3000);
+            }, 1000);
+        });
+    }
+
+    // --- 11. Back to Top Button ---
+    const backToTopBtn = document.getElementById('back-to-top');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+            backToTopBtn.classList.add('visible');
+        } else {
+            backToTopBtn.classList.remove('visible');
         }
     });
+
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
 });
