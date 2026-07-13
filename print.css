@@ -1,0 +1,60 @@
+body {
+    font-family: "Georgia", serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    margin: 1in;
+    color: #000;
+}
+
+h1.title {
+    font-size: 36pt;
+    text-align: center;
+    margin-top: 2in;
+    margin-bottom: 0.5in;
+}
+
+p.subtitle {
+    font-size: 18pt;
+    text-align: center;
+    margin-bottom: 0.5in;
+    font-style: italic;
+}
+
+p.author, p.date {
+    font-size: 14pt;
+    text-align: center;
+    margin-bottom: 0.25in;
+}
+
+/* Force a page break after the title page */
+header {
+    page-break-after: always;
+}
+
+/* Force a page break before every main chapter/section */
+h1 {
+    font-size: 24pt;
+    page-break-before: always;
+    margin-top: 0;
+    padding-top: 1in;
+    margin-bottom: 0.5in;
+    text-align: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+}
+
+h2 {
+    font-size: 16pt;
+    margin-top: 0.5in;
+    margin-bottom: 0.25in;
+}
+
+p {
+    text-align: justify;
+    margin-bottom: 1em;
+}
+
+/* Avoid breaking inside paragraphs or headings */
+h1, h2, h3, p {
+    page-break-inside: avoid;
+}
